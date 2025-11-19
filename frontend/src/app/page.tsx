@@ -394,13 +394,14 @@ const ClientApp = () => {
         await program!
           .methods
           .initializeLendingMarket()
-          .accounts({
+          .accountsStrict({
+            payer: publicKey,
             lendingMarket: LENDING_MARKET_PDA,
-            collateralMint: COLLATERAL_MINT_PDA,
-            loanMint: LOAN_MINT_PDA,
-            collateralVault: COLLATERAL_VAULT_PDA,
-            loanVault: LOAN_VAULT_PDA,
             systemProgram: SystemProgram.programId,
+            collateralMint: COLLATERAL_MINT_PDA,
+            collateralVault: COLLATERAL_VAULT_PDA,
+            loanMint: LOAN_MINT_PDA,
+            loanVault: LOAN_VAULT_PDA,
             tokenProgram: TOKEN_PROGRAM_ID,
           })
           .rpc();
@@ -424,16 +425,16 @@ const ClientApp = () => {
       return;
     }
     await run("Create user account", async () => {
-      await program!
-        .methods
-        .createUserAccount()
-        .accounts({
-          user: publicKey!,
-          userAccount: userAccountPda,
-          lendingMarket: LENDING_MARKET_PDA,
-          systemProgram: SystemProgram.programId,
-        })
-        .rpc();
+        await program!
+          .methods
+          .createUserAccount()
+          .accountsStrict({
+            user: publicKey!,
+            userAccount: userAccountPda,
+            lendingMarket: LENDING_MARKET_PDA,
+            systemProgram: SystemProgram.programId,
+          })
+          .rpc();
     });
     await fetchAndApplyUserAccount();
   }, [
@@ -459,7 +460,7 @@ const ClientApp = () => {
         await program!
           .methods
           .depositCollateral(amount)
-          .accounts({
+          .accountsStrict({
             user: publicKey!,
             userAccount: userAccountPda,
             lendingMarket: LENDING_MARKET_PDA,
@@ -503,7 +504,7 @@ const ClientApp = () => {
         await program!
           .methods
           .borrowToken(amount)
-          .accounts({
+          .accountsStrict({
             user: publicKey!,
             userAccount: userAccountPda,
             lendingMarket: LENDING_MARKET_PDA,
@@ -550,7 +551,7 @@ const ClientApp = () => {
         await program!
           .methods
           .fundLoanVault(amount)
-          .accounts({
+          .accountsStrict({
             authority: publicKey!,
             lendingMarket: LENDING_MARKET_PDA,
             loanMint: new PublicKey(mintAddress),
