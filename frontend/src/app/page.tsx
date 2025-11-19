@@ -357,7 +357,7 @@ const ClientApp = () => {
         throw new Error("Initialize the market to create token mints first");
       }
       const provider = program.provider;
-      if (!provider) {
+      if (!provider || typeof provider.sendAndConfirm !== "function") {
         throw new Error("Program provider unavailable");
       }
       const connection = provider.connection;
