@@ -7,31 +7,31 @@
 ## Project Overview
 
 ### Description
-Lending Solana is a lending dApp deployed on Solana Devnet based on each user's deposited collateral. In this project, there is only **one** lending market which can be initialized and funded by an authority. In this project, decentralized governance is not yet implemented, although ideally it should be done via a multisig or a DAO.
+Lending Solana is a lending dApp deployed on Solana Devnet based on each user's deposited collateral. There is only **one** lending market derived from fixed seeds; the first wallet to initialize it becomes the authority that can later fund the loan vault. Decentralized governance is not yet implemented, although ideally it should be done via a multisig or a DAO.
 
-The lending market owns the collateral/loan token mints and token vaults with 5% annual interest and 120% collateral loan rate. Connected wallets create their own user account PDA, deposit collateral into the market-owned collateral vault, and can borrow synthetic loan tokens as long as the collateral ratio is respected. The frontend exposes every instruction behind a wallet-gated control panel, and keeps market and user state in sync in real time.
+The lending market owns the collateral/loan token mints and token vaults with a stored 5% interest parameter and 120% collateral loan rate (interest accrual/repay flows are not yet implemented on-chain). Connected wallets create their own user account PDA, deposit collateral into the market-owned collateral vault, and can borrow synthetic loan tokens as long as the collateral ratio and vault liquidity are respected. The frontend exposes every instruction behind a wallet-gated control panel and refreshes market and user state after each operation.
 
 Due to time constraints, this project does not have a feature to repay loans, liquidate users based on their collaterals, etc. However, a proper and ideal decentralized lending app should have those capabilities.
 
-Please note that the `Initialize Lending Market` button should currently be disabled since another wallet has initialized it and is the only one that can initialize it. In addition, the button to fund the loan vault is also only visible to the same wallet. 
+Because the market PDA can only be created once, the `Initialize Lending Market` button becomes disabled after the first successful initialization and the UI shows the stored authority. The button to fund the loan vault is only visible to that authority wallet. 
 
 ![Only an authorized wallet can execute these operations](frontend.png)
 
 
 ### Key Features
-- **One-click market bootstrap** – The initializer can derive and create the lending market along with its collateral/loan mints and vaults directly from the UI. This can only be executed **exactly once** by the authorized wallet.
+- **One-click market bootstrap** – The first initializer derives and creates the lending market along with its collateral/loan mints and vaults directly from the UI; after that, the button is disabled and the stored authority is used for admin flows.
 - **Per-wallet user accounts** – Each wallet owns a PDA user account that records a particular user's deposited collateral and borrowed tokens
 - **Collateralized borrowing flow** – A user can deposit collateral tokens to the wallet, transfer them into the vault, and then request to borrow some tokens within the 120% collateral ratio.
 - **Admin liquidity tooling** – The market authority has a dedicated panel to mint fresh liquidity into the loan vault so users always have tokens to borrow.
-- **Clear and concise UX** – The frontend auto-creates associated token accounts, formats token amounts, shows real-time vault liquidity, and streams instruction status messages.
+- **Clear and concise UX** – The frontend auto-creates associated token accounts, formats token amounts, refreshes vault liquidity after each instruction, and streams status messages.
   
 ### How to Use the dApp
 1. **Connect Wallet** – Open the deployed site on Devnet and connect using the wallet adapter button.
-2. **Initialize lending market (once per deployment)** – If no market exists, the connected wallet can execute `Initialize Lending Market`, which derives every PDA (market, mints, vaults) and stores the caller as authority.
+2. **Initialize lending market (once per deployment)** – If no market exists, the connected wallet can execute `Initialize Lending Market`, which derives every PDA (market, mints, vaults) and stores the caller as authority. Once it exists, the UI reuses the deployed market instead of re-initializing.
 3. **Create user account** – Click “Create user account” to initialize your PDA (seeded by your wallet) that will track deposits and borrows.
 4. **Fund the loan vault (authority only)** – The market authority can mint liquidity into the loan vault via the `Fund Loan Vault` form, so borrowers should always have tokens to draw from.
 5. **Deposit collateral** – Enter an amount, let the UI create your associated token account if needed, and click on `Deposit Collateral`. The program mints collateral tokens on-chain and moves them into the market vault while updating your total deposited collateral.
-6. **Borrow tokens** – Choose an amount up to the displayed maximum amount (under the `Your remaining borrow capacity` text) and click on `Borrow Tokens`. The program enforces the 120% collateral ratio and sufficient vault liquidity before transferring the loan tokens to your Asocciated Token Account. 
+6. **Borrow tokens** – Choose an amount up to the displayed maximum amount (under the `Your remaining borrow capacity` text) and click on `Borrow Tokens`. The program enforces the 120% collateral ratio and sufficient vault liquidity before transferring the loan tokens to your Associated Token Account. 
 7. **Monitor status** – The dashboard shows PDA addresses, token account balances, vault liquidity, and textual status updates for every instruction you send.
 
 ## Program Architecture
@@ -112,4 +112,5 @@ anchor test
 ### Additional Notes for Evaluators
 - The frontend (Next.js App Router) consumes the generated Anchor IDL from `frontend/anchor-idl`, derives all PDAs locally, and uses the wallet adapter to sign instructions on Devnet.
 - Token amounts use six decimals everywhere, and the UI includes helpers to parse/format them plus auto-creation of missing associated token accounts before deposits or borrows.
+- The on-chain program currently only tracks principal: it stores `interest_rate_bps` for future use but does not yet accrue interest or include repayment/liquidation logic.
 - The market can be re-used across sessions: initialization is idempotent, and every connected wallet sees live on-chain state (market stats, vault liquidity, borrow limits) without needing to redeploy.
